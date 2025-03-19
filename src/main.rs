@@ -1,8 +1,14 @@
 use std::io;
 
 mod cat;
+use cat::CatOptions;
+
+use clap::Parser;
 
 fn main() -> io::Result<()> {
-    cat::kitty()?;
+    let cat_options = CatOptions::parse();
+
+    cat::kitty(cat_options)?;
+
     Ok(())
 }
