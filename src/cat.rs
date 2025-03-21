@@ -44,13 +44,43 @@ pub struct CatOptions {
     /// Ignored; for POSIX compatability.
     #[arg(short = 'u')]
     do_nothing: bool,
+    /// Show unprintables
+    #[arg(short = 'v')]
+    show_unprintables: bool,
     /// File to operate on, defaults to STDIN.
     #[arg(value_name = "FILE", default_value_t)]
     path: InputArg,
 }
 
+fn write_to_stdout<W: Write>(bytes: &[u8], writer: &mut W) -> io::Result<usize> {
+    let mut count = 0;
+
+    for byte in bytes.iter().copied() {
+        if byte == b'\n' {
+            break;
+        }
+
+        match byte {
+            9 => writer.write_all(&[b'\t']),
+            0..=8 | 10..=31 => writer.write_all(&[b'^', byte + 64]),
+            32..=126 => writer.write_all(&[byte]),
+            127 => writer.write_all(b"^?"),
+            128..=159 => writer.write_all(&[b'M', b'-', b'^', byte - 64]),
+            160..=254 => writer.write_all(&[b'M', b'-', byte - 128]),
+            _ => writer.write_all(b"M-^?"),
+        }?;
+
+        count += 1;
+    }
+
+    writer.flush()?;
+
+    Ok(count)
+}
+
 pub fn kitty(cat_options: CatOptions) -> io::Result<()> {
     let mut f = BufReader::new(cat_options.path.open()?);
+    let mut stdout_writer = io::stdout().lock();
 
     let mut line_number_style = LineNumberStyle::None;
     if cat_options.number_non_blank {
