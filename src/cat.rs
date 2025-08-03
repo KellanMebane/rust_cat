@@ -52,7 +52,7 @@ pub struct CatOptions {
     path: InputArg,
 }
 
-fn write_to_stdout<W: Write>(bytes: &[u8], writer: &mut W) -> io::Result<usize> {
+fn write_bytes_to_writer<W: Write>(bytes: &[u8], writer: &mut W) -> io::Result<usize> {
     let mut count = 0;
 
     for byte in bytes.iter().copied() {
